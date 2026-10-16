@@ -29,7 +29,7 @@ the Python results to within 0.1% (observed worst case: 3×10⁻⁵, from the Me
 ## Quickstart
 
 ```bash
-git clone https://github.com/<your-account>/cooling-water-me-engine.git
+git clone https://github.com/albertpowa/cooling-water-me-engine.git
 cd cooling-water-me-engine
 python3 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
