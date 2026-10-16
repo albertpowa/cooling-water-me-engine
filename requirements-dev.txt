@@ -1,0 +1,3 @@
+-r requirements.txt
+formulas>=1.2      # recalculates the workbook in tests (Python ↔ Excel parity)
+pyflakes>=3.0

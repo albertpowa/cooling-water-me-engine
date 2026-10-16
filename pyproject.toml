@@ -1,0 +1,11 @@
+[project]
+name = "cooling-water-me-engine"
+version = "1.0.0"
+description = "Data Center Cooling Water Management Monitoring & Evaluation (M&E) engine"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

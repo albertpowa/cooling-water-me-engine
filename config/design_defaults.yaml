@@ -1,0 +1,186 @@
+# =============================================================================
+# Default design case - 50 MW hyperscale data center, New York City
+# =============================================================================
+# Every value is an editable input. Units are US customary unless stated.
+# Values flagged (screening) are engineering assumptions for early-stage studies.
+# =============================================================================
+
+site:
+  source: municipal_potable        # key into water_source_profiles.yaml
+  wet_bulb_f: 76.0                 # design ambient wet-bulb (NYC ~0.4% design)
+  barometric_kpa: 101.325
+  hours_per_year: 8760
+  utilization: 0.80                # average IT load / design IT load (annualizing)
+
+data_center:
+  it_load_mw: 50.0
+  other_heat_fraction: 0.05        # UPS / lighting / misc heat on chilled water
+  chw_delta_t_f: 12.0              # chilled-water ΔT used to size CHW flow
+  cop_ref: 5.5                     # chiller COP at the reference CWST
+  cwst_ref_f: 85.0                 # reference condenser-water supply temperature
+  cop_sensitivity_per_f: 0.02      # COP gain per °F colder CWST (screening, ~2 %/°F)
+  other_overhead_pue: 0.08         # non-cooling facility overhead (lighting, UPS losses)
+
+cooling_tower:
+  range_f: 10.0                    # hot - cold water temperature
+  l_over_g: 1.2                    # water-to-air mass ratio
+  water_loading_gpm_ft2: 6.0       # sizing → tower plan area
+  air_specific_volume_ft3_lb: 14.0 # exhaust air specific volume (fan inlet)
+  air_density_kg_m3: 1.15
+  other_static_pa: 60.0            # louvers, plenum, rain zone, exit losses
+  fan_efficiency: 0.75
+  fan_motor_efficiency: 0.94
+  recirc_cl2_mg_l: 0.5             # maintained free-chlorine residual (biocide)
+  biocide_dose_mg_l_makeup: 2.0    # NaOCl (as Cl2) consumption per makeup volume
+  inhibitor_mg_l_recirc: 10.0      # scale/corrosion inhibitor held in recirc (as PO4)
+  max_lsi: 2.5                     # LSI ceiling with inhibitor program
+  coc_min: 1.2
+
+# Baseline vs Optimized scenarios ------------------------------------------------
+scenarios:
+  baseline:
+    label: "Current Baseline"
+    coc_target: 4.0
+    recirc_ph: 8.3
+    blowdown_recovery: false
+    fill:
+      name: "Legacy offset film fill + blade eliminator"
+      ssa_m2_m3: 150.0
+      flute_angle_deg: 30.0
+      sheet_thickness_mm: 0.25
+      fill_height_m: 1.0
+      drift_fraction: 0.002          # 0.20 % of recirculation
+      eliminator_dp_pa: 10.0
+  optimized:
+    label: "Corrugated Fill + High CoC"
+    coc_target: 10.0
+    recirc_ph: 8.4
+    blowdown_recovery: true
+    fill:
+      name: "Cross-fluted corrugated fill + cellular HE eliminator"
+      ssa_m2_m3: 226.0
+      flute_angle_deg: 60.0
+      sheet_thickness_mm: 0.38
+      fill_height_m: 1.2
+      drift_fraction: 0.00001        # 0.001 % of recirculation
+      eliminator_dp_pa: 20.0
+
+fill_model:                        # (screening) Merkel tower-characteristic correlation
+  c0: 1.2                          # KaV/L at SSA_ref, H_ref, 30°, L/G = 1
+  ssa_ref_m2_m3: 150.0
+  height_ref_m: 1.2
+  lg_exponent: 0.6                 # KaV/L ∝ (L/G)^-n
+  angle_exponent: 0.15             # thermal gain vs flute angle
+  dp_coefficient: 0.06             # ΔP = c · SSA · H · ½ρv² · (θ/30)^0.5 / ε²
+  dp_angle_exponent: 0.5
+
+# Process network (ordered). removal = mass-removal fraction R_j to the waste stream.
+# dosing = mg/L added relative to node inflow (negative = consumed).
+treatment:
+  intake:
+    label: "Raw Water Intake"
+    enabled: true
+    recovery: 1.0
+    energy_kwh_per_kgal: 1.5       # raw-water supply energy
+    removal: {}
+    dosing: {}
+    lrv: {virus: 0.0, protozoa: 0.0, bacteria: 0.0}
+  coag_sed:
+    label: "Coagulation / Flocculation / Sedimentation"
+    enabled: true
+    recovery: 0.98
+    energy_kwh_per_kgal: 0.10
+    removal: {tss: 0.90, bod5: 0.30, cod: 0.30, po4: 0.80}
+    dosing: {so4: 4.85, tds: 4.0, ec: 6.0, alkalinity: -5.0}   # alum 10 mg/L: +0.485 SO4, -0.5 alk per mg
+    lrv: {virus: 1.0, protozoa: 0.5, bacteria: 1.0}
+    alum_dose_mg_l: 10.0
+    stokes:
+      particle_diameter_um: 150.0
+      particle_density_kg_m3: 1065.0
+      water_density_kg_m3: 1000.0
+      viscosity_pa_s: 0.00113      # water at 15 °C
+      overflow_rate_m_h: 1.5
+  mmf:
+    label: "Multi-Media Filtration"
+    enabled: true
+    recovery: 0.97
+    energy_kwh_per_kgal: 0.10
+    removal: {tss: 0.80, bod5: 0.10, cod: 0.10}
+    dosing: {}
+    lrv: {virus: 1.0, protozoa: 2.0, bacteria: 1.0}
+  uf:
+    label: "Ultrafiltration"
+    enabled: true
+    recovery: 0.95
+    energy_kwh_per_kgal: 0.40
+    removal: {tss: 0.999, bod5: 0.20, cod: 0.15}
+    dosing: {}
+    lrv: {virus: 4.0, protozoa: 4.0, bacteria: 4.0}
+  ro:
+    label: "RO / IX Demineralization"
+    enabled: false
+    recovery: 0.80
+    energy_kwh_per_kgal: null      # null → feed-TDS correlation
+    rejection: {ec: 0.99, tds: 0.99, sio2: 0.98, na: 0.985, ca: 0.995, mg: 0.995,
+                cl: 0.985, po4: 0.995, so4: 0.995, alkalinity: 0.97, cl2: 1.0,
+                tss: 1.0, bod5: 0.90, cod: 0.90}
+    ph_out: 6.5
+    dosing: {}
+    lrv: {virus: 1.5, protozoa: 1.5, bacteria: 1.5}
+  chlorination:
+    label: "Chlorine Contact (CT)"
+    enabled: true
+    recovery: 1.0
+    energy_kwh_per_kgal: 0.05
+    removal: {cl2: 0.5}            # inflow residual consumed by demand
+    dosing: {cl2: 1.5, na: 1.0, cl: 1.5, tds: 2.5, ec: 4.0}
+    contact_volume_gal: 100000
+    peak_factor: 1.5
+    baffling_factor: 0.3
+    temperature_c: 20.0
+    ph: 7.5
+
+blowdown_recovery:
+  label: "Blowdown Recovery RO (side-stream)"
+  recovery: 0.70
+  rejection: {ec: 0.98, tds: 0.98, sio2: 0.97, na: 0.97, ca: 0.99, mg: 0.99,
+              cl: 0.97, po4: 0.99, so4: 0.99, alkalinity: 0.95, cl2: 1.0,
+              tss: 1.0, bod5: 0.90, cod: 0.90}
+
+pumps:
+  chw:     {label: "Chilled-Water Pumps",    tdh_ft: 120.0, q_bep_gpm: 3000.0, eff_hydraulic: 0.82, eff_mechanical: 0.98, eff_electrical: 0.95}
+  cw:      {label: "Condenser-Water Pumps",  tdh_ft: 80.0,  q_bep_gpm: 4000.0, eff_hydraulic: 0.84, eff_mechanical: 0.98, eff_electrical: 0.95}
+  makeup:  {label: "Raw/Makeup Water Pumps", tdh_ft: 150.0, q_bep_gpm: 300.0,  eff_hydraulic: 0.70, eff_mechanical: 0.98, eff_electrical: 0.92}
+
+microbial_exposure:
+  target_annual_risk: 0.0001       # EPA/WHO benchmark Py ≤ 1e-4
+  ingestion_volume_l: 0.00001      # WERF Table 3-1 aerosol/spray ingestion per event
+  ingestion_events_per_year: 250   # worker-days near tower (screening)
+  legionella_recirc_cfu_l: 1000    # operating control target in recirc water
+  receptor_dilution: 0.01          # plume dilution at receptor (screening)
+  respirable_fraction: 0.1         # fraction of drift water in respirable droplets (screening)
+  breathing_rate_m3_h: 1.3
+  exposure_hours_per_event: 1.0
+  inhalation_events_per_year: 250
+
+economics:                         # NYC DEP FY2022 rate schedule (eff. 1 Jul 2021)
+  water_rate_per_hcf: 4.10         # $/100 ft³ = $5.481/kgal
+  sewer_multiplier: 1.59           # wastewater charge = 159 % of water charge
+  cooling_tower_sewer_allowance: true   # evaporation exempt from sewer (DEP allowance)
+  electricity_per_kwh: 0.20        # NYC commercial (assumption)
+  naocl_per_kg: 0.60               # as Cl2
+  alum_per_kg: 0.35
+  inhibitor_per_kg: 3.00
+  sludge_per_dry_ton: 150.0
+  alum_sludge_yield: 0.26          # kg Al(OH)3 solids / kg alum
+  grid_lb_co2_per_kwh: 0.88        # EAEE 4163 Final Q7
+  social_cost_carbon_per_tonne: 142.0
+  interest_rate: 0.04
+  inflation_rate: 0.03             # discount i = interest + inflation
+  escalation_rate: 0.0276          # NYC water-rate increase FY22
+  horizon_years: 10
+  capex:
+    fill_per_m3: 350.0
+    eliminator_per_m2: 120.0
+    blowdown_ro_per_gpd: 2.00
+    installation_factor: 1.30

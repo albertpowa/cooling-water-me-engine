@@ -1,0 +1,112 @@
+# =============================================================================
+# Water Source Profiles - baseline raw-water quality matrices
+# =============================================================================
+# Typical screening-level values compiled from standard references
+# (seawater: standard mean ocean composition; potable: NYC DEP Catskill/Delaware
+# supply, soft & low-alkalinity with orthophosphate corrosion control; others:
+# representative literature ranges). Replace with site laboratory data for design.
+#
+# Units
+#   pH                -
+#   ec                uS/cm
+#   tds, sio2, na, ca, mg, cl, po4, so4, alkalinity (as CaCO3),
+#   cl2 (free chlorine), tss, bod5, cod          mg/L
+#   rotavirus         organisms/L
+#   giardia, cryptosporidium                     cysts or oocysts/L
+#   vibrio_cholerae   CFU/L
+#   e_coli            CFU/100 mL   (indicator only - not used in QMRA)
+#   hpc               CFU/mL       (indicator only - not used in QMRA)
+#   legionella        CFU/L
+# =============================================================================
+
+# purchased: utility tariff applies   recycled_nonpotable: counts toward LEED WE credit
+sources:
+  municipal_potable:
+    purchased: true
+    recycled_nonpotable: false
+    label: "Municipal Potable"
+    chemistry: {ph: 7.2, ec: 110, tds: 65, sio2: 3.5, na: 10, ca: 7.0, mg: 1.5,
+                cl: 15, po4: 2.0, so4: 6, alkalinity: 15, cl2: 0.7,
+                tss: 0.5, bod5: 0.5, cod: 2}
+    pathogens: {rotavirus: 0.0, giardia: 0.0, cryptosporidium: 0.0,
+                vibrio_cholerae: 0.0, e_coli: 0, hpc: 50, legionella: 1}
+
+  sea_water:
+    purchased: false
+    recycled_nonpotable: false
+    label: "Sea Water"
+    chemistry: {ph: 8.1, ec: 53000, tds: 35000, sio2: 2.0, na: 10770, ca: 412,
+                mg: 1290, cl: 19350, po4: 0.1, so4: 2710, alkalinity: 116,
+                cl2: 0.0, tss: 20, bod5: 3, cod: 10}
+    pathogens: {rotavirus: 10, giardia: 1, cryptosporidium: 1,
+                vibrio_cholerae: 100, e_coli: 100, hpc: 1000, legionella: 10}
+
+  river_water:
+    purchased: false
+    recycled_nonpotable: false
+    label: "River Water"
+    chemistry: {ph: 7.6, ec: 400, tds: 260, sio2: 12, na: 20, ca: 40, mg: 10,
+                cl: 25, po4: 0.3, so4: 40, alkalinity: 110, cl2: 0.0,
+                tss: 50, bod5: 4, cod: 15}
+    pathogens: {rotavirus: 50, giardia: 10, cryptosporidium: 5,
+                vibrio_cholerae: 10, e_coli: 1000, hpc: 5000, legionella: 100}
+
+  groundwater:
+    purchased: false
+    recycled_nonpotable: false
+    label: "Groundwater"
+    chemistry: {ph: 7.3, ec: 700, tds: 455, sio2: 30, na: 40, ca: 90, mg: 25,
+                cl: 50, po4: 0.1, so4: 60, alkalinity: 250, cl2: 0.0,
+                tss: 2, bod5: 1, cod: 3}
+    pathogens: {rotavirus: 0.1, giardia: 0.01, cryptosporidium: 0.01,
+                vibrio_cholerae: 0.0, e_coli: 1, hpc: 100, legionella: 10}
+
+  mbr_permeate:
+    purchased: false
+    recycled_nonpotable: true
+    label: "MBR Permeate / Wastewater Reuse"
+    chemistry: {ph: 7.0, ec: 900, tds: 585, sio2: 20, na: 90, ca: 50, mg: 15,
+                cl: 110, po4: 4.0, so4: 70, alkalinity: 120, cl2: 0.0,
+                tss: 1, bod5: 3, cod: 25}
+    pathogens: {rotavirus: 500, giardia: 0.1, cryptosporidium: 0.1,
+                vibrio_cholerae: 1, e_coli: 10, hpc: 1000, legionella: 100}
+
+  rainwater:
+    purchased: false
+    recycled_nonpotable: true
+    label: "Rainwater (roof harvest)"
+    chemistry: {ph: 6.0, ec: 20, tds: 13, sio2: 0.5, na: 1, ca: 1, mg: 0.3,
+                cl: 2, po4: 0.05, so4: 2, alkalinity: 5, cl2: 0.0,
+                tss: 10, bod5: 2, cod: 10}
+    pathogens: {rotavirus: 1, giardia: 0.5, cryptosporidium: 0.5,
+                vibrio_cholerae: 0.0, e_coli: 50, hpc: 500, legionella: 10}
+
+# -----------------------------------------------------------------------------
+# Dose-response parameters (QMRA)
+#   beta_poisson : Pd = 1 - (1 + d/beta)^(-alpha)
+#   exponential  : Pd = 1 - exp(-r d)
+# Rotavirus & V. cholerae values follow the EAEE 4163 course / WERF framework.
+# Giardia (Rose et al. 1991), Cryptosporidium (Haas et al. 1996),
+# Legionella inhalation (Armstrong & Haas 2007).
+# class -> which LRV credit column applies (virus | protozoa | bacteria)
+# -----------------------------------------------------------------------------
+dose_response:
+  rotavirus:       {model: beta_poisson, alpha: 0.253, beta: 0.422,  class: virus,    route: ingestion}
+  giardia:         {model: exponential,  r: 0.0199,                  class: protozoa, route: ingestion}
+  cryptosporidium: {model: exponential,  r: 0.004191,                class: protozoa, route: ingestion}
+  vibrio_cholerae: {model: beta_poisson, alpha: 0.097, beta: 13020,  class: bacteria, route: ingestion}
+  legionella:      {model: exponential,  r: 0.06,                    class: bacteria, route: inhalation}
+
+# -----------------------------------------------------------------------------
+# Cooling-tower recirculating water limits.
+# LEED v4 BD+C WE Credit "Cooling Tower Water Use", Table 1 (max concentrations).
+# ca_as_caco3 is compared against Ca(mg/L) x 2.497.
+# -----------------------------------------------------------------------------
+leed_condenser_limits:
+  ca_as_caco3: 1000
+  alkalinity: 1000
+  sio2: 100
+  cl: 250
+  ec: 2000
+
+silica_alert_mg_l: 150       # silica solubility blowdown alert

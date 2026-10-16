@@ -1,0 +1,1 @@
+"""openpyxl workbook generator."""

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# Environments
+.venv/
+venv/
+.env
+
+# Generated workbooks (the committed sample lives in examples/)
+/*.xlsx
+examples/*.xlsx
+!examples/Data_Center_Cooling_ME_Engine.xlsx
+~$*.xlsx
+
+# Streamlit / OS / IDE
+.streamlit/secrets.toml
+.DS_Store
+.idea/
+.vscode/
